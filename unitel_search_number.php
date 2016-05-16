@@ -46,10 +46,11 @@
     
     </form>
 <?php
-
-ini_set('display_errors',0);
+error_reporting(E_ERROR);
+ini_set('display_errors',1);
 ini_set('display_startup_errors',0);
 ini_set('max_execution_time', 0);
+ini_set('xdebug.max_nesting_level', 10000);
 
 if(isset($_POST['task'])) { $task = $_POST['task']; } elseif(isset($_GET['task'])) { $task = $_GET['task']; } else { $task = "main"; }
 
@@ -84,7 +85,6 @@ if($task == 'search') {
         
         echo '
         <h2>'.$num_prefix.' үр дүн: </h2>
-        <div>
         ';
         
         
@@ -97,30 +97,37 @@ if($task == 'search') {
             echo str_replace("\n", '<br />', $number_result->nodeValue);
         }
         $buttons = $finder->query("//*[contains(@class, 'button-style')]");
-
-        foreach($buttons as $button) {
-            if($button->nodeValue == 'Дараах') {
-                $range = str_replace(array('clickButton(',')'), array('',''), $button->getAttribute('onclick'));
-                $range_array = explode(',', $range);
-                send_post($num_prefix, $range_array[0], $range_array[1]);
+        if(count($buttons) > 0) {
+            foreach($buttons as $button) {
+                if($button->nodeValue == 'Дараах') {
+                    $range = str_replace(array('clickButton(',')'), array('',''), $button->getAttribute('onclick'));
+                    $range_array = explode(',', $range);
+                    send_post($num_prefix, $range_array[0], $range_array[1]);
+                } else {
+                    continue;
+                }
+                //<li><a href="javascript:void(0);" id="numbersearchpage" onclick="clickButton(129,192);"  class="button-style">Дараах</a></li>
             }
-            //<li><a href="javascript:void(0);" id="numbersearchpage" onclick="clickButton(129,192);"  class="button-style">Дараах</a></li>
         }
-        echo '</div>';
+        echo '<br />';
           
     }
     
     $html = file_get_contents($url);
+    if($html) {
+        $dom = new DOMDocument;
+        $dom->loadHTML($html);
+        $prefix_dom = $dom->getElementById('prefix');
+        $optionTags = $prefix_dom->getElementsByTagName('option');
         
-    $dom = new DOMDocument;
-    $dom->loadHTML($html);
-    $prefix_dom = $dom->getElementById('prefix');
-    $optionTags = $prefix_dom->getElementsByTagName('option');
-    
-    for ($i = 0; $i < $optionTags->length; $i++ ) {
-        $num_prefix = $optionTags->item($i)->nodeValue;
-        send_post($num_prefix);
-        //sleep(rand(1, 2));
+        for ($i = 0; $i < $optionTags->length; $i++ ) {
+            $num_prefix = $optionTags->item($i)->nodeValue;
+            echo '<h1>'.$num_prefix.':</h1>';
+            send_post($num_prefix);
+            //sleep(rand(1, 2));
+        }
+    } else {
+        echo 'Алдаа: Интернэт холболтоо шалгана уу. Эсвэл URL хаяг буруу байна.';
     }
 }
 
